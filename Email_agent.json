@@ -1,0 +1,397 @@
+{
+  "name": "Email-agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -40
+      ],
+      "id": "54cfd2d5-39a2-4227-a584-ed3aab281cf2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 10,
+        "filters": {
+          "readStatus": "unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        220,
+        -40
+      ],
+      "id": "35dcb7a1-a4c3-4b33-8fb5-a74dcb6c69d0",
+      "name": "Gmail",
+      "webhookId": "25f5c84f-9650-485c-84db-f9c25c291524",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MW72KjswFzDVZpFF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "072fa433-a72f-405f-866e-07060a70ee0f",
+              "name": "=emailSubject",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "2432c892-9192-47bd-8599-91ad0549945c",
+              "name": "emailBody",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            },
+            {
+              "id": "23d5da91-d282-4114-868e-3247a83e5344",
+              "name": "messageId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "90e072d3-8c95-41be-bf60-394beb63bc50",
+              "name": "From",
+              "value": "={{ $json.From }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        -20
+      ],
+      "id": "74242ec9-d7f3-4349-85dc-ae13f9e3d50d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=AIzaSyAsAUiCkmqOz1DkwY3966j7vmB9YOffZxc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": \"You are an email assistant. Please read the email below and return the following in JSON:\\n{\\n  \\\"category\\\": \\\"Work | Personal | Spam | Other\\\",\\n  \\\"summary\\\": \\\"<brief summary>\\\",\\n  \\\"reply\\\": \\\"<draft reply to send>\\\"\\n}\\n\\nEmail Subject: {{ $json.emailSubject }}\\n\\nEmail Body: {{ $json.emailBody }}\"\n        }\n      ]\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        260
+      ],
+      "id": "719d3c85-7ba0-4f3e-8a05-8a142afe3c42",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7d7fcb75-d4b1-4281-9f2a-a9fb113fce7e",
+              "name": "=emailCategory",
+              "value": "={{ JSON.parse($json[\"candidates\"][0][\"content\"][\"parts\"][0][\"text\"].replace(/```json|```/g, '').trim()).category }}",
+              "type": "string"
+            },
+            {
+              "id": "8c238529-ea15-4438-9bd9-3cde1c4132b2",
+              "name": "=emailReply",
+              "value": "={{ JSON.parse($json[\"candidates\"][0][\"content\"][\"parts\"][0][\"text\"].replace(/```json|```/g, '').trim()).reply }}",
+              "type": "string"
+            },
+            {
+              "id": "ee4affa5-6bf4-4b73-9f43-d276d5e2c0b2",
+              "name": "=emailSummary",
+              "value": "={{ JSON.parse($json[\"candidates\"][0][\"content\"][\"parts\"][0][\"text\"].replace(/```json|```/g, '').trim()).summary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1320,
+        260
+      ],
+      "id": "613a6223-f747-416a-8518-c1540293373e",
+      "name": "Set"
+    },
+    {
+      "parameters": {
+        "resource": "label"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2760,
+        40
+      ],
+      "id": "1ee6180a-e29f-48a8-bbb1-a66b3bb6ff6a",
+      "name": "Gmail3",
+      "webhookId": "f3510436-4f7e-41e7-a8b5-cea3dbd4273d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MW72KjswFzDVZpFF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "f328d71e-ef09-4ac5-9071-d8b2fe407da1",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9a694d51-a6cc-4ca5-ab30-962e27974a68",
+              "name": "messageId",
+              "value": "={{ $json.messageId }}",
+              "type": "string"
+            },
+            {
+              "id": "0adc6797-f39e-4107-9e3d-97b689626b70",
+              "name": "labelId",
+              "value": "={{ (\n  $json.emailCategory === \"Spam\" ? \"Label_3894673533616150148\" :\n  $json.emailCategory === \"Work\" ? \"Label_3279380876253027991\" :\n  $json.emailCategory === \"Personal\" ? \"Label_3560075737455508619\" :\n  \"Label_8880847309967592924\"\n).trim()\n }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        280
+      ],
+      "id": "6f29ca16-91a2-49bc-8cb3-08ad662ca0de",
+      "name": "Edit Fields1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.emailSubject }}",
+        "message": "=Summary: {{ $json.emailSummary }}\nReply : {{ $json.emailReply }}",
+        "options": {
+          "sendTo": "={{ $json.From }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2200,
+        0
+      ],
+      "id": "4e4b46a5-b358-4766-8e1f-7784cf039baf",
+      "name": "Draft Writer",
+      "webhookId": "af74badd-f847-4c49-995c-76fb41f65e79",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MW72KjswFzDVZpFF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $json.messageId }}",
+        "labelIds": "={{ $json.labelId }}"
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2320,
+        300
+      ],
+      "id": "e75bba5b-c493-417c-9009-f825289d396d",
+      "name": "Categorizer",
+      "webhookId": "88d1a71d-52ee-4a1e-97ab-32613e8c6075",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MW72KjswFzDVZpFF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1980,
+        280
+      ],
+      "id": "c4f34cd3-5df8-4b91-8095-50f09fb52025",
+      "name": "Loop Over Items"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Draft Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Writer": {
+      "main": [
+        []
+      ]
+    },
+    "Categorizer": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Categorizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ce6fa579-27f7-4f40-8f04-98834f594496",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d8bb5f5b3b33f284ecf0a5213545276fa413bf900eb9f05921614f501b903e52"
+  },
+  "id": "wT32kF1zMGXxjI2D",
+  "tags": []
+}
